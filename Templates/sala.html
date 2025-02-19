@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Main area</title>
+        <style>
+            body{
+                font-family: Arial, sans-serif;
+                background-color:rgb(208, 208, 208);
+                margin: 0;
+                padding: 0;
+            }
+
+            .container {
+            border-radius: 5px;
+            text-align: center;
+            margin: auto;
+            padding: 10px;
+            width: 700px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            }
+            .seat-container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                margin: 20px 0;
+            }
+            .seat {
+                width: 70px;
+                height: 90px;
+                margin: 5px;
+                background-color: #800080;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 5px;
+                cursor: pointer;
+                position: relative;
+            }
+            .seat.booked {
+                background-color: #808080;
+            }
+            .seat.booked:hover {
+                background-color:rgb(44, 44, 44);
+            }
+            .seat:hover {
+                background-color: #9932CC;
+            }
+            .button {
+                cursor: pointer;
+                padding: 10px 20px;
+                background-color: #800080;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                text-decoration: none;
+                margin: 0 10px;
+            }
+            .button:hover {
+                background-color: #9932CC;
+            }
+            .row {
+                display: flex;
+                justify-content: center;
+                margin-bottom: 10px;
+            }
+            .spacer {
+                width: 20px;
+            }
+            .seat button:hover {
+                background-color: #BA55D3;
+            }
+            .seat .cancel-button {
+                display: block;
+                background-color: red;
+                position: absolute;
+                bottom: 5px;
+                left: 50%;
+                transform: translateX(-50%);
+                border: none;
+                color: white;
+                padding: 5px;
+                border-radius: 3px;
+                cursor: pointer;
+            }
+            .seat .cancel-button:hover {
+                background-color: darkred;
+            }
+            .seat.booked .cancel-button {
+                display: block;
+            }
+            .seat button.prenota-button {
+                position: absolute;
+                bottom: 5px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: #DA70D6;
+                border: none;
+                color: white;
+                padding: 5px;
+                border-radius: 3px;
+                cursor: pointer;
+                display: block;
+                z-index: 1;
+            }
+
+            .seat.booked button.prenota-button {
+                display: none;
+            }
+            .seat button.prenota-button {
+                display: block;
+                background-color: #DA70D6;
+            }
+
+            .seat button.cancel-button {
+                display: block;
+                background-color: red;
+            }
+
+            .seat.booked button.prenota-button {
+                display: none;
+            }
+
+            .seat.booked button.cancel-button {
+                display: block;
+            }
+        </style>
+
+        <style>
+            .seat {
+                position: relative;
+            }
+            .seat button {
+                display: block !important;
+            }
+        </style>
+
+    </head>
+    <body style="padding:20px">
+        <div class="container" style="padding: 20px">
+            <h1>{{titolo1}}</h1>
+            <h2>{{subtitolo1}}</h2>
+            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis neque culpa, quas voluptatem impedit rerum quia at non pariatur earum alias corrupti, quo possimus ea consectetur vel maxime quod asperiores.</p>
+
+            {% if profilo['isAdmin'] %}
+                <span style = "margin: 0px"><a href="/napafiniReg" class="button">Registra Admin</a></span>
+                <br><br>
+            {% endif %}
+
+            <hr>
+
+            <h2>{{subtitolo2}}</h2>
+
+            <h2>Benvenuto, {{profilo['nominativo']}}</h2>
+
+            <div class = "seat-container">
+                {% for row in ['A', 'B', 'C', 'D', 'E', 'F', 'G'] %}
+                    <div class="row">
+                        {% for col in range(1, 5) %}
+                            
+                            {% with %}
+                                {% set ns = namespace(posto=None) %}
+                                {% for p in posti %}
+                                    {% if p['numero'] == row ~ col %}
+                                        {% set ns.posto = p %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <div class="seat {{ 'booked' if ns.posto and ns.posto['prenotato'] else '' }}">
+                                    {% if ns.posto %}
+                                        {{ row }}{{ col }}
+                                        {% if ns.posto['prenotato'] == True and (ns.posto['id_profilo'] == profilo['id'] or profilo['isAdmin']) %}
+                                            <form action="/eliminaPrenotazione" method="POST">
+                                                <input type="hidden" name="id_posto" value="{{ns.posto['id']}}">
+                                                <button class="cancel-button" style="margin-top: 20px;">Annulla</button>
+                                            </form>
+                                        {% elif not ns.posto['prenotato'] %}
+                                            <form action="/prenota" method="POST">
+                                                <input type="hidden" name="id_posto" value="{{ns.posto['id']}}">
+                                                <button class="prenota-button" style="margin-top: 20px;">Prenota</button>
+                                            </form>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            {% endwith %}
+
+                        {% endfor %}
+
+                        <div class="spacer"></div>
+
+                        {% for col in range(5, 9) %}
+                            
+                            {% with %}
+                                {% set ns = namespace(posto=None) %}
+                                {% for p in posti %}
+                                    {% if p['numero'] == row ~ col %}
+                                        {% set ns.posto = p %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <div class="seat {{ 'booked' if ns.posto and ns.posto['prenotato'] else '' }}">
+                                    {% if ns.posto %}
+                                        {{ row }}{{ col }}
+                                        {% if ns.posto['prenotato'] == True and (ns.posto['id_profilo'] == profilo['id'] or profilo['isAdmin']) %}
+                                            <form action="/eliminaPrenotazione" method="POST">
+                                                <input type="hidden" name="id_posto" value="{{ns.posto['id']}}">
+                                                <button class="cancel-button" style="margin-top: 20px;">Annulla</button>
+                                            </form>
+                                        {% elif not ns.posto['prenotato'] %}
+                                            <form action="/prenota" method="POST">
+                                                <input type="hidden" name="id_posto" value="{{ns.posto['id']}}">
+                                                <button class="prenota-button" style="margin-top: 20px;">Prenota</button>
+                                            </form>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            {% endwith %}
+
+                        {% endfor %}
+
+                    </div>
+                {% endfor %}
+            </div>
+
+            <br>
+            <a href="/logout" class="button">Logout</a>
+
+        </div>
+    </body>
+</html>
