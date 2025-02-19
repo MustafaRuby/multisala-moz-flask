@@ -57,7 +57,7 @@ Apri il browser e vai su `http://localhost:3000`
 ## 📂 Struttura del Progetto
 
 ```
-multisala-oz/
+multisala-cinema-flask/
 │
 ├── app.py           # Entry point dell'applicazione
 ├── db_manager.py    # Gestione database
