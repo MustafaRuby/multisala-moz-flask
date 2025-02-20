@@ -5,26 +5,36 @@
 ![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white)
 
-> Un moderno sistema di prenotazione posti per sale cinematografiche sviluppato con Flask 🚀
+> Un moderno sistema di prenotazione posti per multisala cinematografica sviluppato con Flask 🚀
 
 ## 📝 Descrizione
 
-Gestisci facilmente le prenotazioni dei posti nella tua sala cinematografica con un'interfaccia intuitiva e un backend robusto. Il sistema supporta sia utenti normali che amministratori, offrendo un'esperienza personalizzata per ogni ruolo.
+Gestisci facilmente le prenotazioni dei posti nelle tue sale cinematografiche con un'interfaccia intuitiva e un backend robusto. 
+
+Il sistema supporta 8 sale da 56 posti ciascuna, con gestione di utenti normali e amministratori, offrendo un'esperienza personalizzata per ogni ruolo.
 
 ## ✨ Funzionalità Principali
 
 ### 👥 Per gli Utenti
 - 📝 Registrazione semplice e veloce
 - 🔐 Sistema di login sicuro
-- 🎯 Visualizzazione interattiva dei posti
+- 🎯 Selezione della sala desiderata
+- 🎬 Visualizzazione interattiva dei posti per ogni sala
 - 🎟️ Prenotazione con un click
 - ❌ Gestione delle proprie prenotazioni
 
 ### 👑 Per gli Amministratori
 - 🔑 Pannello admin dedicato
 - 👥 Gestione degli amministratori
-- 🎫 Controllo totale sulle prenotazioni
+- 🎫 Controllo totale sulle prenotazioni di tutte le sale
 - 🔄 Override delle prenotazioni esistenti
+
+## 🏗️ Struttura delle Sale
+
+- **🎭 Numero Sale**: 8 sale indipendenti
+- **💺 Posti per Sala**: 56 posti (7 file (da A a G) × 8 colonne (da 1 a 8))
+- **🎯 Layout**: Layout ottimizzato con corridoio centrale
+- **🔍 Identificazione**: Posti identificati da lettera (fila) e numero (colonna)
 
 ## 🛠️ Tecnologie Utilizzate
 
@@ -57,7 +67,7 @@ Apri il browser e vai su `http://localhost:3000`
 ## 📂 Struttura del Progetto
 
 ```
-multisala-cinema-flask/
+multisala-oz/
 │
 ├── app.py           # Entry point dell'applicazione
 ├── db_manager.py    # Gestione database
@@ -66,10 +76,11 @@ multisala-cinema-flask/
 ├── templates/       # Template HTML
 │   ├── adminLog.html
 │   ├── adminReg.html
+│   ├── arena.html     # Selezione sala
 │   ├── error.html
 │   ├── login.html
 │   ├── register.html
-│   └── sala.html
+│   └── sala.html      # Visualizzazione posti
 │
 └── README.md
 ```
@@ -104,8 +115,6 @@ Distribuito sotto licenza MIT. Vedi `LICENSE` per maggiori informazioni.
 Mostafa Abou Elkhir - [abouelkhirmostaffa@email.com](mailto:abouelkhirmostaffa@email.com)
 
 Link Progetto: [https://github.com/MustafaRuby/multisala-cinema-flask.git](https://github.com/MustafaRuby/multisala-cinema-flask.git)
-
-Questo progetto è un'evoluzione e una completa migrazione di un progetto che ho fatto precedentemente con javascript (node, express), html, pug e sqlite3. Visita anche quello se sei interessato: [https://github.com/MustafaRuby/Multisala-cinema](https://github.com/MustafaRuby/Multisala-cinema)
 
 ---
 ⭐️ Se ti piace questo progetto, metti una stella! ⭐️

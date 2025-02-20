@@ -27,9 +27,9 @@ db_manager.create_database() # Creates the database
 
 @app.route('/')
 def home():
-    # Se l'utente è già loggato (email o admin), mandalo alla sala
+    # Se l'utente è già loggato (email o admin), mandalo all'arena
     if ('email' in session and session['email']) or ('admin' in session and session['admin']):
-        return redirect(url_for('sala'))
+        return redirect(url_for('arena'))
     # Altrimenti, mandalo alla pagina di registrazione
     return redirect(url_for('register'))
 
@@ -68,7 +68,12 @@ def errregadmin():
 
 @app.route('/errsala')
 def errsala():
-    messaggio = 'Errore: Accesso non autorizzato'
+    messaggio = 'Errore: Accesso alla sala non autorizzato'
+    return render_template('error.html', messaggio=messaggio)
+
+@app.route('/errarena')
+def errarena():
+    messaggio = 'Errore: Accesso all\'arena non autorizzato'
     return render_template('error.html', messaggio=messaggio)
 
 @app.route('/errprenota')
@@ -111,7 +116,7 @@ def login_user():
     if(result):
         session['email'] = email
         session['admin'] = None
-        return redirect(url_for('sala')) # Redirects the user to the 'sala' route
+        return redirect(url_for('arena')) # Redirects the user to the 'sala' route
     else:
         return redirect(url_for('errlogin')) # Redirects the user to the 'errlogin' route
 
@@ -129,7 +134,7 @@ def adminLog():
 
     if(admin):
         session['admin'] = nome
-        return redirect(url_for('sala'))
+        return redirect(url_for('arena'))
     else:
         return redirect(url_for('erradmin'))
 
@@ -150,45 +155,77 @@ def register_admin():
     if not result:
         return redirect(url_for('errregadmin'))
 
-    return redirect(url_for('sala'))
+    return redirect(url_for('arena'))
 
-@app.route('/sala')
+
+@app.route('/arena')
+def arena():
+    try:
+        if not session['email'] and not session['admin']:
+            return redirect(url_for('errsala'))
+        
+        profilo = ''
+        if session['admin']:
+            profilo = {'nominativo': session['admin'], 'isAdmin': True}
+        else:
+            profilo = db_manager.cercaProfiloEmail(session['email'])
+
+        with db_manager.DB_connect() as connection:
+            cursor = connection.execute('SELECT * FROM sale')
+            sale = cursor.fetchall()
+
+        return render_template('arena.html', profilo=profilo, sale=sale)
+    except Exception as e:
+        print(f"Errore in arena(): {str(e)}")
+        return redirect(url_for('errarena'))
+
+@app.route('/sala', methods=['GET'])
 def sala():
-    if not session['email'] and not session['admin']:
+    try:
+        if not session['email'] and not session['admin']:
+            return redirect(url_for('errsala'))
+        
+        profilo = ''
+
+        if session['admin']:
+            profilo = {'nominativo': session['admin'], 'isAdmin': True}
+        else:
+            profilo = db_manager.cercaProfiloEmail(session['email'])
+
+        posti = db_manager.listaPosti()
+        numero_sala = request.args.get('numero_sala', type=int)
+        if numero_sala:
+            posti = [posto for posto in posti if posto['id_sala'] == numero_sala]
+        else:
+            return redirect(url_for('errsala'))
+            
+        prenotazioni = db_manager.listaPrenotazioni()
+
+        # Funzione per aggiungere informazioni sui posti prenotati
+        posti_con_prenotazioni = []
+        for posto in posti:
+            posto_info = dict(posto)
+            prenotazione = next(
+                (p for p in prenotazioni if p['id_posto'] == posto['id']), 
+                None
+            )
+            posto_info['prenotato'] = bool(prenotazione)
+            posto_info['id_profilo'] = prenotazione['id_profilo'] if prenotazione else None
+            posti_con_prenotazioni.append(posto_info)
+
+        return render_template('sala.html', titolo1=f'Sala {numero_sala}', subtitolo1='Informazioni sulla nostra app', subtitolo2='Posti', profilo=profilo, posti=posti_con_prenotazioni)
+    except Exception as e:
+        print(f"Errore in sala(): {str(e)}")
         return redirect(url_for('errsala'))
-    
-    profilo = ''
-
-    if session['admin']:
-        profilo = {'nominativo': session['admin'], 'isAdmin': True}
-
-    else:
-        profilo = db_manager.cercaProfiloEmail(session['email'])
-
-
-    posti = db_manager.listaPosti()
-    prenotazioni = db_manager.listaPrenotazioni()
-
-    # Funzione per aggiungere informazioni sui posti prenotati
-    posti_con_prenotazioni = []
-    for posto in posti:
-        posto_info = dict(posto)
-        prenotazione = next(
-            (p for p in prenotazioni if p['id_posto'] == posto['id']), 
-            None
-        )
-        posto_info['prenotato'] = bool(prenotazione)
-        posto_info['id_profilo'] = prenotazione['id_profilo'] if prenotazione else None
-        posti_con_prenotazioni.append(posto_info)
-
-    return render_template('sala.html', titolo1='Sala principale', subtitolo1='Informazioni sulla nostra app', subtitolo2='Posti', profilo=profilo, posti=posti_con_prenotazioni)
 
 @app.route('/prenota', methods=['POST'])
 def prenota():
     id_profilo = None
     nome_admin = None
     
-    # Controlliamo prima se esiste effettivamente la chiave nella sessione
+    # Ottieni il numero della sala dalla query string
+    numero_sala = request.args.get('numero_sala', type=int)
+    
     if 'email' in session and session['email']: 
         profilo = db_manager.cercaProfiloEmail(session['email'])
         if profilo:
@@ -207,7 +244,7 @@ def prenota():
         result = db_manager.prenotaPosto(nome_admin, id_posto, True)
     
     if result:
-        return redirect(url_for('sala'))
+        return redirect(url_for('sala', numero_sala=numero_sala))
     else:
         return redirect(url_for('errprenota'))
         
@@ -215,6 +252,9 @@ def prenota():
 def eliminaPrenotazione():
     id_profilo = None
     profilo_admin = None
+
+    # Ottieni il numero della sala dalla query string
+    numero_sala = request.args.get('numero_sala', type=int)
 
     if session['email']:
         id_profilo = db_manager.cercaProfiloEmail(session['email'])['id']
@@ -225,17 +265,16 @@ def eliminaPrenotazione():
     
     id_posto = request.form['id_posto']
 
-    # Check if profilo_admin exists before accessing it
     if profilo_admin and profilo_admin['isAdmin']:
         result = db_manager.eliminaPrenotazione(None, id_posto, profilo_admin['nome'])
         if result:
-            return redirect(url_for('sala'))
+            return redirect(url_for('sala', numero_sala=numero_sala))
         else:
             return redirect(url_for('errelimina'))
     elif id_profilo:
         result = db_manager.eliminaPrenotazione(id_profilo, id_posto, None)
         if result:
-            return redirect(url_for('sala'))
+            return redirect(url_for('sala', numero_sala=numero_sala))
         else:
             return redirect(url_for('errelimina'))
     else:
@@ -246,5 +285,14 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
     
+def redirectUrl():
+    try:
+        if ('email' in session and session['email']) or ('admin' in session and session['admin']):
+            return redirect(url_for('arena'))
+        return redirect(url_for('register'))
+    except Exception as e:
+        print(f"Errore in redirectUrl(): {str(e)}")
+        return redirect(url_for('errsala'))
+
 if __name__ == '__main__':
     app.run(debug=True, port=3000)

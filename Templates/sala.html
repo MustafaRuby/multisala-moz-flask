@@ -144,7 +144,8 @@
             <h1>{{titolo1}}</h1>
             <h2>{{subtitolo1}}</h2>
             <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis neque culpa, quas voluptatem impedit rerum quia at non pariatur earum alias corrupti, quo possimus ea consectetur vel maxime quod asperiores.</p>
-
+            <a href="/arena" class="button">Torna all'arena</a>
+            <br><br>
             {% if profilo['isAdmin'] %}
                 <span style = "margin: 0px"><a href="/napafiniReg" class="button">Registra Admin</a></span>
                 <br><br>
@@ -173,12 +174,12 @@
                                     {% if ns.posto %}
                                         {{ row }}{{ col }}
                                         {% if ns.posto['prenotato'] == True and (ns.posto['id_profilo'] == profilo['id'] or profilo['isAdmin']) %}
-                                            <form action="/eliminaPrenotazione" method="POST">
+                                            <form action="{{ url_for('eliminaPrenotazione', numero_sala=request.args.get('numero_sala')) }}" method="POST">
                                                 <input type="hidden" name="id_posto" value="{{ns.posto['id']}}">
                                                 <button class="cancel-button" style="margin-top: 20px;">Annulla</button>
                                             </form>
                                         {% elif not ns.posto['prenotato'] %}
-                                            <form action="/prenota" method="POST">
+                                            <form action="{{ url_for('prenota', numero_sala=request.args.get('numero_sala')) }}" method="POST">
                                                 <input type="hidden" name="id_posto" value="{{ns.posto['id']}}">
                                                 <button class="prenota-button" style="margin-top: 20px;">Prenota</button>
                                             </form>
@@ -205,12 +206,12 @@
                                     {% if ns.posto %}
                                         {{ row }}{{ col }}
                                         {% if ns.posto['prenotato'] == True and (ns.posto['id_profilo'] == profilo['id'] or profilo['isAdmin']) %}
-                                            <form action="/eliminaPrenotazione" method="POST">
+                                            <form action="{{ url_for('eliminaPrenotazione', numero_sala=request.args.get('numero_sala')) }}" method="POST">
                                                 <input type="hidden" name="id_posto" value="{{ns.posto['id']}}">
                                                 <button class="cancel-button" style="margin-top: 20px;">Annulla</button>
                                             </form>
                                         {% elif not ns.posto['prenotato'] %}
-                                            <form action="/prenota" method="POST">
+                                            <form action="{{ url_for('prenota', numero_sala=request.args.get('numero_sala')) }}" method="POST">
                                                 <input type="hidden" name="id_posto" value="{{ns.posto['id']}}">
                                                 <button class="prenota-button" style="margin-top: 20px;">Prenota</button>
                                             </form>

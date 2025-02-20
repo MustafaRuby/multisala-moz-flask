@@ -18,22 +18,28 @@ def create_database():
     with DB_connect() as connection, open('db.sql', 'r') as file:
         # Prima esegui lo script SQL per creare/aggiornare le tabelle
         connection.executescript(file.read())
+
+        # Controlla se la tabella sale è vuota
+        cursor = connection.execute('SELECT COUNT(*) FROM sale')
+        count = cursor.fetchone()[0]
         
+        # Inserisci le sale solo se la tabella è vuota
+        if count == 0:
+            for sala in range(1, 9):
+                connection.execute('INSERT INTO sale (numero) VALUES (?)', (sala,))
+                connection.commit()
+                
         # Controlla se la tabella posti è vuota
         cursor = connection.execute('SELECT COUNT(*) FROM posti')
         count = cursor.fetchone()[0]
         
         # Inserisci i posti solo se la tabella è vuota
         if count == 0:
-            # Create list of seats as tuples (row, column)
-            posti = []
-            for row in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
-                for col in range(1, 9):
-                    posto = f"{row}{col}"
-                    posti.append((posto,))
-
-            # Insert all seats
-            connection.executemany('INSERT INTO posti (numero) VALUES (?)', posti)
+            for sala in range(1, 9):
+                for row in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
+                    for col in range(1, 9):
+                        posto = f"{row}{col}"
+                        connection.execute('INSERT INTO posti (id_sala, numero) VALUES (?, ?)', (sala, posto))
             connection.commit()
 
 def inserisciProfilo(email, password, nominativo, genere):
@@ -113,6 +119,6 @@ def registraAdmin(nome, password):
         if(cercaAmministratore(nome, password)):
             return False
         
-        connection.execute('INSERT INTO amministratori (nome, password) VALUES (?, ?)', (nome, password))
+        connection.execute('INSERT INTO amministratori (nome, password) VALUES (?, ?, ?)', (nome, password))
         connection.commit()
         return True

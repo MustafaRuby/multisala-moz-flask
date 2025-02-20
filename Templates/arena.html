@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arena principale</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: rgb(208, 208, 208);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            border-radius: 5px;
+            text-align: center;
+            margin: auto;
+            padding: 10px;
+            width: 700px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+
+        .theaters-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .theater-card {
+            background-color: #800080;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .theater-card:hover {
+            background-color: #9932CC;
+        }
+
+        .button {
+            cursor: pointer;
+            padding: 10px 20px;
+            background-color: #800080;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .button:hover {
+            background-color: #9932CC;
+        }
+    </style>
+</head>
+<body style="padding:20px">
+    <div class="container" style="padding: 20px">
+        <h1>Multisala Moz</h1>
+        <h2>Seleziona una sala</h2>
+
+        {% if profilo['isAdmin'] %}
+            <span style="margin: 0px"><a href="/napafiniReg" class="button">Registra Admin</a></span>
+            <br><br>
+        {% endif %}
+
+        <hr>
+
+        <h2>Benvenuto, {{profilo['nominativo']}}</h2>
+
+        <div class="theaters-grid">
+            {% for sala in sale %}
+                <form action="/sala" method="GET" style="margin: 0">
+                    <input type="hidden" name="numero_sala" value="{{ sala['numero'] }}">
+                    <button type="submit" class="theater-card" style="width: 100%">
+                        <h3>Sala {{ sala['numero'] }}</h3>
+                        <p>Clicca per visualizzare i posti</p>
+                    </button>
+                </form>
+            {% endfor %}
+        </div>
+
+        <br>
+        <a href="/logout" class="button">Logout</a>
+    </div>
+</body>
+</html>
