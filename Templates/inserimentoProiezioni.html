@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inserimento Proiezione</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: rgb(208, 208, 208);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            border-radius: 5px;
+            text-align: center;
+            margin: auto;
+            padding: 10px;
+            width: 700px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+
+        .form-group {
+            margin: 20px 0;
+            text-align: left;
+            padding: 0 50px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group select,
+        .form-group input[type="date"],
+        .form-group input[type="time"],
+        .form-group input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .button {
+            cursor: pointer;
+            padding: 10px 20px;
+            background-color: #800080;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .button:hover {
+            background-color: #9932CC;
+        }
+    </style>
+</head>
+<body style="padding:20px">
+    <div class="container" style="padding: 20px">
+        <h1>Inserisci una nuova proiezione</h1>
+        <form action="/inserisciProiezioni" method="POST">
+            <div class="form-group">
+                <label for="film">Seleziona Film:</label>
+                <select id="film" name="id_film" required>
+                    {% for film in film %}
+                        <option value="{{ film['id'] }}">{{ film['titolo'] }} ({{ film['durata'] }} min)</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="sala">Numero Sala:</label>
+                <select id="sala" name="id_sala" required>
+                    {% for sala in sale %}
+                        <option value="{{ sala['id'] }}">Sala {{ sala['numero'] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="data">Data:</label>
+                <input type="date" id="data" name="data" required>
+            </div>
+
+            <div class="form-group">
+                <label for="ora">Ora:</label>
+                <input type="time" id="ora" name="ora" required>
+            </div>
+
+            <button type="submit" class="button">Inserisci Proiezione</button>
+        </form>
+        <br><br>
+        <a href="/proiezioni" class="button">Torna alle proiezioni</a>
+    </div>
+</body>
+</html>

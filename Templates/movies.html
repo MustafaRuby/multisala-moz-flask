@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Film disponibili</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: rgb(208, 208, 208);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            border-radius: 5px;
+            text-align: center;
+            margin: auto;
+            padding: 10px;
+            width: 700px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+
+        .button {
+            cursor: pointer;
+            padding: 10px 20px;
+            background-color: #800080;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .button:hover {
+            background-color: #9932CC;
+        }
+
+        .order{
+            cursor: pointer;
+            padding: 10px 20px;
+            background-color: #ca00ab;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .button .order:hover {
+            background-color: #7f007f;
+        }
+
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .movie-card {
+            background-color: #800080;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            align-items: center;  /* Centra gli elementi orizzontalmente */
+        }
+
+        .movie-poster-container {
+            width: 150px;  /* Larghezza fissa del contenitore */
+            height: 200px; /* Altezza fissa del contenitore */
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .movie-poster {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;     /* Permette all'immagine di mantenere le proporzioni */
+            height: auto;    /* Permette all'immagine di mantenere le proporzioni */
+            border-radius: 4px;
+        }
+
+        .movie-info {
+            flex-grow: 1;
+            width: 100%;     /* Occupa tutta la larghezza disponibile */
+            text-align: left; /* Allinea il testo a sinistra */
+        }
+
+        .movie-card h3 {
+            margin-top: 0;
+            color: white;
+        }
+
+        .movie-card p {
+            margin: 5px 0;
+        }
+
+        .delete-button {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .delete-button:hover {
+            background-color: #cc0000;
+        }
+
+        .empty-message {
+            padding: 30px;
+            background-color: #800080;
+            color: white;
+            border-radius: 5px;
+            text-align: center;
+            margin: 20px auto;
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body style="padding:20px">
+    <div class="container" style="padding: 20px">
+        <h1>Film disponibili</h1>
+
+        {% if profilo['isAdmin'] %}
+            <a href="/inserisciFilm" class="button">Inserisci Film</a>
+            <br><br>
+        {% endif %}
+        <br>
+        <a href="/proiezioni" class="button">Proiezioni</a><br><br>
+
+        <hr>
+
+        <h2>Benvenuto, {{profilo['nominativo']}}</h2>
+        {% if film %}
+            <p style="font-size: larger; text-align: left; margin-left: 20px; font-weight: bolder;">Film disponibili al nostro teatro:</p>
+            <div class="movie-grid">
+                {% for movie in film %}
+                    <div class="movie-card">
+                        <div class="movie-poster-container">
+                            {% if movie.poster_filename %}
+                                <img class="movie-poster" src="{{ url_for('static', filename='uploads/' + movie.poster_filename) }}" alt="{{ movie.titolo }}" loading="lazy">
+                            {% else %}
+                                <img class="movie-poster" src="{{ url_for('static', filename='default-movie.jpg') }}" alt="No poster">
+                            {% endif %}
+                        </div>
+                        <div class="movie-info">
+                            <h3>{{ movie['titolo'] }}</h3>
+                            <p><strong>Durata:</strong> {{ movie['durata'] }} minuti</p><br>
+                            <p><strong>Trama:</strong> {{ movie['trama'] }}</p>
+                            <div style="margin-top: 15px">
+                                <form action="{{ url_for('proiezioniFilm') }}" method="GET" style="display: inline-block">
+                                    <input type="hidden" name="id_film" value="{{ movie['id'] }}">
+                                    <button type="submit" class="button order">Visualizza Proiezioni</button>
+                                </form>
+                                {% if profilo['isAdmin'] %}
+                                    <form action="{{ url_for('eliminaFilm') }}" method="POST" style="display: inline-block; margin-left: 10px">
+                                        <input type="hidden" name="id_film" value="{{ movie['id'] }}">
+                                        <button type="submit" class="delete-button">Elimina Film</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-message">
+                <h3>Non ci sono film disponibili al momento</h3>
+                {% if profilo['isAdmin'] %}
+                    <p>Usa il pulsante "Inserisci Film" per aggiungere nuovi film al catalogo!</p>
+                {% else %}
+                    <p>Il nostro staff sta lavorando per aggiungere nuovi film.</p>
+                    <p>Torna a trovarci presto!</p>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <br>
+        <a href="/arena" class="button">Procedi all'arena</a>
+    </div>
+</body>
+</html>

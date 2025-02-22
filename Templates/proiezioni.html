@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proiezioni</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: rgb(208, 208, 208);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            border-radius: 5px;
+            text-align: center;
+            margin: auto;
+            padding: 10px;
+            width: 700px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+
+        .button {
+            cursor: pointer;
+            padding: 10px 20px;
+            background-color: #800080;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .button:hover {
+            background-color: #9932CC;
+        }
+
+        .order{
+            cursor: pointer;
+            padding: 10px 20px;
+            background-color: #ca00ab;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .button .order:hover {
+            background-color: #7f007f;
+        }
+
+        .screening-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .screening-card {
+            background-color: #800080;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .screening-card h3 {
+            margin-top: 0;
+            color: white;
+        }
+
+        .screening-card p {
+            margin: 5px 0;
+        }
+
+        .delete-button {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .delete-button:hover {
+            background-color: #cc0000;
+        }
+
+        .empty-message {
+            padding: 30px;
+            background-color: #800080;
+            color: white;
+            border-radius: 5px;
+            text-align: center;
+            margin: 20px auto;
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body style="padding:20px"></body>
+    <div class="container" style="padding: 20px">
+        <h1>Proiezioni disponibili</h1>
+
+        {% if profilo['isAdmin'] %}
+            <a href="/inserisciProiezioni" class="button">Inserisci Proiezione</a>
+            <br><br>
+        {% endif %}
+
+        <hr>
+
+        <h2>Benvenuto, {{profilo['nominativo']}}</h2>
+
+        {% if proiezioni %}
+            <div class="screening-grid">
+                {% for proiezione in proiezioni %}
+                    <div class="screening-card">
+                        <h3>{{ proiezione['titolo'] }}</h3>
+                        <p><strong>Data:</strong> {{ proiezione['data'] }}</p>
+                        <p><strong>Ora:</strong> {{ proiezione['ora'] }}</p>
+                        <p><strong>Durata:</strong> {{ proiezione['durata'] }} minuti</p>
+                        <p><strong>Sala:</strong> {{ proiezione['numero_sala'] }}</p>
+                        <form action="{{ url_for('sala') }}" method="GET" style="margin-top: 15px">
+                            <input type="hidden" name="id_sala" value="{{ proiezione['id_sala'] }}">
+                            <input type="hidden" name="id_proiezione" value="{{ proiezione['id'] }}">
+                            <button type="submit" class="button order">Prenota sedie</button>
+                        </form>
+                        {% if profilo['isAdmin'] %}
+                            <form action="{{ url_for('eliminaProiezione') }}" method="POST" style="margin-top: 10px">
+                                <input type="hidden" name="id_proiezione" value="{{ proiezione['id'] }}">
+                                <button type="submit" class="delete-button">Elimina Proiezione</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-message">
+                <h3>Non ci sono proiezioni disponibili al momento</h3>
+                <p>Torna più tardi per vedere i nuovi spettacoli!</p>
+            </div>
+        {% endif %}
+
+        <br>
+        <a href="/film" class="button">Procedi ai film</a>
+        <a href="/arena" class="button">Procedi all'arena</a>
+    </div>
+</body>
+</html>

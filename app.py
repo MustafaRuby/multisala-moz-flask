@@ -3,6 +3,7 @@ from flask_session import Session
 import db_manager
 import secrets
 import tempfile
+import os
 
 """
 This script sets up a basic Flask web application with a single route.
@@ -22,6 +23,14 @@ app.secret_key = secrets.token_hex(16) # Generates a secret key
 # configurazione della sessione
 app.config['SESSION_TYPE'] = 'filesystem' # Tipo di sessione
 app.config['SESSION_PERMANENT_LIFETIME'] = 1800 # 30 minuti
+
+# Create upload folder if it doesn't exist
+UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Add configuration to Flask app
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 db_manager.create_database() # Creates the database
 
@@ -76,6 +85,12 @@ def errarena():
     messaggio = 'Errore: Accesso all\'arena non autorizzato'
     return render_template('error.html', messaggio=messaggio)
 
+@app.route('/errfilm')
+def errfilm():
+    messaggio = 'Errore: Accesso ai film non autorizzato'
+    return render_template('error.html', messaggio=messaggio)
+
+
 @app.route('/errprenota')
 def errprenota():
     messaggio = 'Errore: errore durante la prenotazione'
@@ -84,6 +99,16 @@ def errprenota():
 @app.route('/errelimina')
 def errelimina():
     messaggio = 'Errore: errore durante l\'eliminazione della prenotazione'
+    return render_template('error.html', messaggio=messaggio)
+
+@app.route('/errproiezione')
+def errproiezione():
+    messaggio = 'Errore: Accesso alle proiezioni non autorizzato'
+    return render_template('error.html', messaggio=messaggio)
+
+@app.route('/errinserisciproiezione')
+def errinserisciproiezione():
+    messaggio = 'Errore: problema con l\'inserimento della proiezione'
     return render_template('error.html', messaggio=messaggio)
 
 @app.route('/register', methods=['POST'])
@@ -116,7 +141,7 @@ def login_user():
     if(result):
         session['email'] = email
         session['admin'] = None
-        return redirect(url_for('arena')) # Redirects the user to the 'sala' route
+        return redirect(url_for('film'))  # Cambiato da 'arena' a 'film'
     else:
         return redirect(url_for('errlogin')) # Redirects the user to the 'errlogin' route
 
@@ -134,7 +159,7 @@ def adminLog():
 
     if(admin):
         session['admin'] = nome
-        return redirect(url_for('arena'))
+        return redirect(url_for('film'))  # Cambiato da 'arena' a 'film'
     else:
         return redirect(url_for('erradmin'))
 
@@ -157,6 +182,84 @@ def register_admin():
 
     return redirect(url_for('arena'))
 
+@app.route('/film')
+def film():
+    try:
+        if not session['email'] and not session['admin']:
+            return redirect(url_for('errsala'))
+        
+        profilo = ''
+        if session['admin']:
+            profilo = {'nominativo': session['admin'], 'isAdmin': True}
+        else:
+            profilo = db_manager.cercaProfiloEmail(session['email'])
+        
+        film = db_manager.listaFilm()
+
+        return render_template('movies.html', profilo=profilo, film=film)
+    except Exception as e:
+        print(f"Errore in film(): {str(e)}")
+        return redirect(url_for('errsala'))
+
+@app.route('/inserisciFilm')
+def inserisciFilm():
+    try: 
+        if not session['admin']:
+            return redirect(url_for('errfilm'))
+        return render_template('inserimentoFilm.html')
+    except Exception as e:
+        print(f"Errore in inserisciFilm(): {str(e)}")
+        return redirect(url_for('errfilm'))
+    
+@app.route('/eliminaFilm', methods=['POST'])
+def eliminaFilm():
+    try: 
+        if not session['admin']:
+            return redirect(url_for('errfilm'))
+
+        id_film = request.form['id_film']
+        film = db_manager.cercaFilmConId(id_film)
+        
+        if film and film['poster_filename']:
+            # Elimina il file del poster se esiste
+            poster_path = os.path.join(app.config['UPLOAD_FOLDER'], film['poster_filename'])
+            if os.path.exists(poster_path):
+                os.remove(poster_path)
+
+        result = db_manager.eliminaFilm(id_film)
+
+        if result:
+            return redirect(url_for('film'))
+        return redirect(url_for('errfilm'))
+    except Exception as e: 
+        print(f"Errore in eliminaFilm(): {str(e)}")
+        return redirect(url_for('errfilm'))
+
+@app.route('/inserisciFilm', methods=['POST'])
+def inserisci_film():
+    if not session['admin']:
+        return redirect(url_for('errfilm'))
+    
+    titolo = request.form['titolo']
+    durata = request.form['durata']
+    trama = request.form['trama']
+    
+    # Handle poster upload
+    poster_filename = None
+    if 'poster' in request.files:
+        poster = request.files['poster']
+        if poster.filename != '':
+            # Generate unique filename
+            ext = os.path.splitext(poster.filename)[1]
+            poster_filename = secrets.token_hex(8) + ext
+            poster.save(os.path.join(app.config['UPLOAD_FOLDER'], poster_filename))
+
+    result = db_manager.inserisciFilm(titolo, durata, trama, poster_filename)
+
+    if result:
+        return redirect(url_for('film'))
+    else:
+        return redirect(url_for('errfilm'))
 
 @app.route('/arena')
 def arena():
@@ -179,6 +282,28 @@ def arena():
         print(f"Errore in arena(): {str(e)}")
         return redirect(url_for('errarena'))
 
+@app.route('/proiezioni')
+def proiezioni():
+    try:
+        if not session['email'] and not session['admin']:
+            return redirect(url_for('errsala'))
+        
+        # Pulisci le proiezioni scadute prima di mostrare la lista
+        db_manager.pulisci_proiezioni_scadute()
+        
+        profilo = ''
+        if session['admin']:
+            profilo = {'nominativo': session['admin'], 'isAdmin': True}
+        else:
+            profilo = db_manager.cercaProfiloEmail(session['email'])
+
+        proiezioni = db_manager.listaProiezioniConDettagli()
+        
+        return render_template('proiezioni.html', profilo=profilo, proiezioni=proiezioni)
+    except Exception as e:
+        print(f"Errore in proiezioni(): {str(e)}")
+        return redirect(url_for('errarena'))
+
 @app.route('/sala', methods=['GET'])
 def sala():
     try:
@@ -186,22 +311,41 @@ def sala():
             return redirect(url_for('errsala'))
         
         profilo = ''
-
         if session['admin']:
             profilo = {'nominativo': session['admin'], 'isAdmin': True}
         else:
             profilo = db_manager.cercaProfiloEmail(session['email'])
 
-        posti = db_manager.listaPosti()
-        numero_sala = request.args.get('numero_sala', type=int)
-        if numero_sala:
-            posti = [posto for posto in posti if posto['id_sala'] == numero_sala]
-        else:
+        id_sala = request.args.get('id_sala', type=int)
+        id_proiezione = request.args.get('id_proiezione', type=int)
+        
+        if not id_sala or not id_proiezione:
             return redirect(url_for('errsala'))
-            
-        prenotazioni = db_manager.listaPrenotazioni()
 
-        # Funzione per aggiungere informazioni sui posti prenotati
+        # Verifica che la sala esista
+        sala = db_manager.cercaSalaConId(id_sala)
+        if not sala:
+            return redirect(url_for('errsala'))
+
+        # Verifica che la proiezione esista
+        proiezione = db_manager.cercaProiezioneConId(id_proiezione)
+        if not proiezione:
+            return redirect(url_for('errsala'))
+
+        # Verifica che la proiezione sia effettivamente per questa sala
+        if proiezione['id_sala'] != id_sala:
+            return redirect(url_for('errsala'))
+
+        # Get sala number for display purposes
+        sala = db_manager.cercaSalaConId(id_sala)
+        if not sala:
+            return redirect(url_for('errsala'))
+
+        posti = db_manager.listaPosti()
+        posti = [posto for posto in posti if posto['id_sala'] == id_sala]
+        
+        prenotazioni = db_manager.listaPrenotazioniPerProiezione(id_proiezione)
+
         posti_con_prenotazioni = []
         for posto in posti:
             posto_info = dict(posto)
@@ -213,73 +357,100 @@ def sala():
             posto_info['id_profilo'] = prenotazione['id_profilo'] if prenotazione else None
             posti_con_prenotazioni.append(posto_info)
 
-        return render_template('sala.html', titolo1=f'Sala {numero_sala}', subtitolo1='Informazioni sulla nostra app', subtitolo2='Posti', profilo=profilo, posti=posti_con_prenotazioni)
+        return render_template('sala.html', 
+                            titolo1=f'Sala {sala["numero"]}',  # Use sala number from database
+                            subtitolo1='Informazioni sulla nostra app', 
+                            subtitolo2='Posti', 
+                            profilo=profilo, 
+                            posti=posti_con_prenotazioni,
+                            id_proiezione=id_proiezione)
+
     except Exception as e:
         print(f"Errore in sala(): {str(e)}")
         return redirect(url_for('errsala'))
 
 @app.route('/prenota', methods=['POST'])
 def prenota():
-    id_profilo = None
-    nome_admin = None
-    
-    # Ottieni il numero della sala dalla query string
-    numero_sala = request.args.get('numero_sala', type=int)
-    
-    if 'email' in session and session['email']: 
-        profilo = db_manager.cercaProfiloEmail(session['email'])
-        if profilo:
-            id_profilo = profilo['id']
-    elif 'admin' in session and session['admin']:
-        nome_admin = session['admin']
-    
-    if not id_profilo and not nome_admin:
-        return redirect(url_for('errsala'))
-
-    id_posto = request.form['id_posto']
-
-    if id_profilo:
-        result = db_manager.prenotaPosto(id_profilo, id_posto, None)
-    elif nome_admin:
-        result = db_manager.prenotaPosto(nome_admin, id_posto, True)
-    
-    if result:
-        return redirect(url_for('sala', numero_sala=numero_sala))
-    else:
-        return redirect(url_for('errprenota'))
+    try:
+        id_profilo = None
+        nome_admin = None
         
+        id_sala = request.args.get('id_sala', type=int)  # Cambiato da numero_sala a id_sala
+        id_proiezione = request.args.get('id_proiezione', type=int)
+        
+        if 'email' in session and session['email']: 
+            profilo = db_manager.cercaProfiloEmail(session['email'])
+            if profilo:
+                id_profilo = profilo['id']
+        elif 'admin' in session and session['admin']:
+            nome_admin = session['admin']
+        
+        if not id_profilo and not nome_admin:
+            return redirect(url_for('errsala'))
+
+        id_posto = request.form['id_posto']
+
+        if id_profilo:
+            result = db_manager.prenotaPosto(id_profilo, id_posto, None, id_proiezione)
+        elif nome_admin:
+            result = db_manager.prenotaPosto(None, id_posto, nome_admin, id_proiezione)
+        
+        if result:
+            return redirect(url_for('sala', id_sala=id_sala, id_proiezione=id_proiezione))  # Cambiato da numero_sala a id_sala
+        else:
+            return redirect(url_for('errprenota'))
+    except Exception as e:
+        print(f"Errore in prenota(): {str(e)}")
+        return redirect(url_for('errprenota'))
+
 @app.route('/eliminaPrenotazione', methods=['POST'])
 def eliminaPrenotazione():
-    id_profilo = None
-    profilo_admin = None
+    try:
+        id_profilo = None
+        profilo_admin = None
+        
+        id_sala = request.args.get('id_sala', type=int)
+        id_proiezione = request.args.get('id_proiezione', type=int)
 
-    # Ottieni il numero della sala dalla query string
-    numero_sala = request.args.get('numero_sala', type=int)
+        if session['email']:
+            id_profilo = db_manager.cercaProfiloEmail(session['email'])['id']
+        elif session['admin']:
+            profilo_admin = { 'nome': session['admin'], 'isAdmin': True }
+        else:
+            return redirect(url_for('errelimina'))
+        
+        id_posto = request.form['id_posto']
 
-    if session['email']:
-        id_profilo = db_manager.cercaProfiloEmail(session['email'])['id']
-    elif session['admin']:
-        profilo_admin = { 'nome': session['admin'], 'isAdmin': True }
-    else:
+        if profilo_admin and profilo_admin['isAdmin']:
+            result = db_manager.eliminaPrenotazione(None, id_posto, id_proiezione, profilo_admin['nome'])
+        else:
+            result = db_manager.eliminaPrenotazione(id_profilo, id_posto, id_proiezione, None)
+        
+        if result:
+            return redirect(url_for('sala', id_sala=id_sala, id_proiezione=id_proiezione))
+        else:
+            return redirect(url_for('errelimina'))
+    except Exception as e:
+        print(f"Errore in eliminaPrenotazione(): {str(e)}")
         return redirect(url_for('errelimina'))
-    
-    id_posto = request.form['id_posto']
 
-    if profilo_admin and profilo_admin['isAdmin']:
-        result = db_manager.eliminaPrenotazione(None, id_posto, profilo_admin['nome'])
+@app.route('/eliminaProiezione', methods=['POST'])
+def eliminaProiezione():
+    try:
+        if not session['admin']:
+            return redirect(url_for('errfilm'))
+
+        id_proiezione = request.form['id_proiezione']
+        result = db_manager.eliminaProiezione(id_proiezione)
+
         if result:
-            return redirect(url_for('sala', numero_sala=numero_sala))
+            return redirect(url_for('proiezioni'))
         else:
-            return redirect(url_for('errelimina'))
-    elif id_profilo:
-        result = db_manager.eliminaPrenotazione(id_profilo, id_posto, None)
-        if result:
-            return redirect(url_for('sala', numero_sala=numero_sala))
-        else:
-            return redirect(url_for('errelimina'))
-    else:
-        return redirect(url_for('errsala'))
-    
+            return redirect(url_for('errfilm'))
+    except Exception as e:
+        print(f"Errore in eliminaProiezione(): {str(e)}")
+        return redirect(url_for('errfilm'))
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -293,6 +464,107 @@ def redirectUrl():
     except Exception as e:
         print(f"Errore in redirectUrl(): {str(e)}")
         return redirect(url_for('errsala'))
+
+@app.route('/inserisciProiezioni')
+def inserisciProiezioni():
+    try:
+        if not session['admin']:
+            return redirect(url_for('errproiezione'))
+        
+        film = db_manager.listaFilm()
+        sale = db_manager.listaSale()
+        
+        return render_template('inserimentoProiezioni.html', film=film, sale=sale)
+    except Exception as e:
+        print(f"Errore in inserisciProiezioni(): {str(e)}")
+        return redirect(url_for('errproiezione'))
+
+@app.route('/inserisciProiezioni', methods=['POST'])
+def inserisci_proiezione():
+    try:
+        if not session['admin']:
+            return redirect(url_for('errfilm'))
+        
+        id_film = request.form['id_film']
+        id_sala = request.form['id_sala']
+        data = request.form['data']
+        ora = request.form['ora']
+        
+        film = db_manager.cercaFilmConId(id_film)
+        if not film:
+            return redirect(url_for('errfilm'))
+        
+        result = db_manager.inserisciProiezione(film['titolo'], id_sala, data, ora)
+        
+        if result:
+            return redirect(url_for('proiezioni'))
+        else:
+            return redirect(url_for('errinserisciproiezione'))
+    except Exception as e:
+        print(f"Errore in inserisci_proiezione(): {str(e)}")
+        return redirect(url_for('errinserisciproiezione'))
+
+@app.route('/proiezioniSala')
+def proiezioniSala():
+    try:
+        if not session['email'] and not session['admin']:
+            return redirect(url_for('errsala'))
+        
+        numero_sala = request.args.get('numero_sala', type=int)
+        if not numero_sala:
+            return redirect(url_for('errarena'))
+        
+        # Verifica che la sala esista basandosi sul numero
+        sala = db_manager.cercaSalaConNumero(numero_sala)
+        if not sala:
+            return redirect(url_for('errarena'))
+        
+        profilo = ''
+        if session['admin']:
+            profilo = {'nominativo': session['admin'], 'isAdmin': True}
+        else:
+            profilo = db_manager.cercaProfiloEmail(session['email'])
+
+        proiezioni = db_manager.listaProiezioniPerSala(numero_sala)
+        
+        return render_template('proiezioniSala.html', 
+                            profilo=profilo, 
+                            proiezioni=proiezioni,
+                            numero_sala=numero_sala)
+    except Exception as e:
+        print(f"Errore in proiezioniSala(): {str(e)}")
+        return redirect(url_for('errarena'))
+
+@app.route('/proiezioniFilm')
+def proiezioniFilm():
+    try:
+        if not session['email'] and not session['admin']:
+            return redirect(url_for('errsala'))
+        
+        id_film = request.args.get('id_film', type=int)
+        if not id_film:
+            return redirect(url_for('errfilm'))
+        
+        # Verifica che il film esista
+        film = db_manager.cercaFilmConId(id_film)
+        if not film:
+            return redirect(url_for('errfilm'))
+        
+        profilo = ''
+        if session['admin']:
+            profilo = {'nominativo': session['admin'], 'isAdmin': True}
+        else:
+            profilo = db_manager.cercaProfiloEmail(session['email'])
+
+        proiezioni = db_manager.listaProiezioniPerFilm(id_film)
+        
+        return render_template('proiezioniFilm.html', 
+                            profilo=profilo, 
+                            proiezioni=proiezioni,
+                            film=film)
+    except Exception as e:
+        print(f"Errore in proiezioniFilm(): {str(e)}")
+        return redirect(url_for('errfilm'))
 
 if __name__ == '__main__':
     app.run(debug=True, port=3000)
