@@ -138,7 +138,7 @@ Mostafa Abou Elkhir - [abouelkhirmostaffa@email.com](mailto:abouelkhirmostaffa@e
 
 Link Progetto: [https://github.com/MustafaRuby/multisala-moz-flask](https://github.com/MustafaRuby/multisala-moz-flask)
 
-//*Questo progetto è un'evoluzione e una completa migrazione di un progetto che ho fatto precedentemente con javascript (node, express), html, pug e sqlite3. Visita anche quello se sei interessato, ma nota che è molto vecchio rispetto alle modifiche effettuate su questo progetto*: [git clone https://github.com/MustafaRuby/Multisala-cinema.git](git clone https://github.com/MustafaRuby/Multisala-cinema.git)
+//*Questo progetto è un'evoluzione e una completa migrazione di un progetto che ho fatto precedentemente con javascript (node, express), html, pug e sqlite3. Visita anche quello se sei interessato, ma nota che è molto vecchio rispetto alle modifiche effettuate su questo progetto*: [https://github.com/MustafaRuby/Multisala-cinema.git](https://github.com/MustafaRuby/Multisala-cinema.git)
 
 ---
 ⭐️ Se ti piace questo progetto, metti una stella! ⭐️
